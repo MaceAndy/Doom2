@@ -1,6 +1,7 @@
 import pygame as pg
 from settings import *
-import os
+import zipfile
+import io
 from collections import deque
 
 
@@ -10,7 +11,9 @@ class SpriteObject:
         self.game = game
         self.player = game.player
         self.x, self.y = pos
-        self.image = pg.image.load(path).convert_alpha()
+        self.zip_archive = zipfile.ZipFile('resources.zip', 'r')
+        image_data = self.zip_archive.read(path)
+        self.image = pg.image.load(io.BytesIO(image_data), path).convert_alpha()
         self.IMAGE_WIDTH = self.image.get_width()
         self.IMAGE_HALF_WIDTH = self.image.get_width() // 2
         self.IMAGE_RATIO = self.IMAGE_WIDTH / self.image.get_height()
@@ -82,8 +85,14 @@ class AnimatedSprite(SpriteObject):
 
     def get_images(self, path):
         images = deque()
-        for file_name in os.listdir(path):
-            if os.path.isfile(os.path.join(path, file_name)):
-                img = pg.image.load(path + '/' + file_name).convert_alpha()
-                images.append(img)
+        file_list = []
+        for member in self.zip_archive.infolist():
+            if member.filename.startswith(path + '/') and not member.is_dir():
+                if member.filename.count('/') == path.count('/') + 1:
+                    file_list.append(member.filename)
+
+        for file_name in sorted(file_list):
+            image_data = self.zip_archive.read(file_name)
+            img = pg.image.load(io.BytesIO(image_data), file_name).convert_alpha()
+            images.append(img)
         return images
