@@ -1,11 +1,14 @@
 import pygame as pg
 from settings import *
+import zipfile
+import io
 
 
 class ObjectRenderer:
     def __init__(self, game):
         self.game = game
         self.screen = game.screen
+        self.zip_archive = zipfile.ZipFile('resources.zip', 'r')
         self.wall_textures = self.load_wall_textures()
         self.sky_image = self.get_texture('resources/textures/sky.png', (WIDTH, HALF_HEIGHT))
         self.sky_offset = 0
@@ -49,9 +52,9 @@ class ObjectRenderer:
         for depth, image, pos in list_objects:
             self.screen.blit(image, pos)
 
-    @staticmethod
-    def get_texture(path, res=(TEXTURE_SIZE, TEXTURE_SIZE)):
-        texture = pg.image.load(path).convert_alpha()
+    def get_texture(self, path, res=(TEXTURE_SIZE, TEXTURE_SIZE)):
+        texture_data = self.zip_archive.read(path)
+        texture = pg.image.load(io.BytesIO(texture_data), path).convert_alpha()
         return pg.transform.scale(texture, res)
 
     def load_wall_textures(self):
